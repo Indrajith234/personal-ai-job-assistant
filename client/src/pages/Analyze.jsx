@@ -104,27 +104,25 @@ const Analyze = () => {
                 <div className="input-card-icon">📄</div>
                 <div className="input-card-title">Upload Resume (PDF)</div>
               </div>
-              <div
+              <label
+                htmlFor="resume-upload"
                 className={`upload-zone ${isDragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onClick={() => {
-                  // Reset input value first so same file can be re-selected
+                  // Reset so same file can be re-selected
                   if (fileInputRef.current) fileInputRef.current.value = '';
-                  fileInputRef.current?.click();
                 }}
+                style={{ cursor: 'pointer' }}
               >
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept=".pdf"
-                  className="file-input-hidden"
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    handleFile(e.target.files[0]);
-                  }}
                   id="resume-upload"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFile(e.target.files[0])}
                 />
                 <div className="upload-icon">{file ? '✅' : '📤'}</div>
                 <div className="upload-title">
@@ -138,7 +136,7 @@ const Analyze = () => {
                     📎 {file.name} ({(file.size / 1024).toFixed(1)} KB)
                   </div>
                 )}
-              </div>
+              </label>
             </div>
 
             {/* Job Description */}
