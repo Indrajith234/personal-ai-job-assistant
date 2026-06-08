@@ -823,7 +823,7 @@ h1, h2, h3, h4 {
 
 /* Upload Zone */
 .upload-zone {
-  border: 2px dashed var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 48px 24px;
   text-align: center;
