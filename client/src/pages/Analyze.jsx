@@ -109,14 +109,21 @@ const Analyze = () => {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  // Reset input value first so same file can be re-selected
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                  fileInputRef.current?.click();
+                }}
               >
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept=".pdf"
                   className="file-input-hidden"
-                  onChange={(e) => handleFile(e.target.files[0])}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleFile(e.target.files[0]);
+                  }}
                   id="resume-upload"
                 />
                 <div className="upload-icon">{file ? '✅' : '📤'}</div>
