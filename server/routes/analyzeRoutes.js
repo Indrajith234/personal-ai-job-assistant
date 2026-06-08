@@ -2,20 +2,22 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 const authMiddleware = require('../middleware/authMiddleware');
 const Analysis = require('../models/Analysis');
 
 const router = express.Router();
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+// Initialize Groq AI (free, no credit card needed)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 // Configure Multer for PDF uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
+    const uploadDir = path.join(__dirname, '../uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -45,8 +47,8 @@ const extractTextFromPDF = async (filePath) => {
   return data.text;
 };
 
-// Helper: Clean JSON from Gemini response
-const parseGeminiJSON = (text) => {
+// Helper: Parse JSON from AI response
+const parseAIJSON = (text) => {
   const cleaned = text
     .replace(/```json\n?/gi, '')
     .replace(/```\n?/gi, '')
@@ -54,10 +56,15 @@ const parseGeminiJSON = (text) => {
   return JSON.parse(cleaned);
 };
 
-// Helper: Extract job title and company from JD
-const extractJobInfo = (jobDescription) => {
-  const lines = jobDescription.split('\n').slice(0, 5).join(' ');
-  return lines.substring(0, 100);
+// Helper: Call Groq AI
+const callGroq = async (prompt) => {
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: GROQ_MODEL,
+    temperature: 0.7,
+    max_tokens: 2048,
+  });
+  return completion.choices[0].message.content;
 };
 
 // @route   POST /api/analyze
@@ -103,17 +110,16 @@ router.post('/', authMiddleware, upload.single('resume'), async (req, res) => {
       });
     }
 
-    // Gemini Prompt
-    const prompt = `
-You are an expert ATS (Applicant Tracking System) and senior corporate recruiter with 15+ years of experience at top tech companies.
+    // AI Prompt
+    const prompt = `You are an expert ATS (Applicant Tracking System) and senior corporate recruiter with 15+ years of experience at top tech companies.
 
 Carefully analyze the following resume against the job description provided.
 
 === RESUME ===
-${resumeText}
+${resumeText.substring(0, 3000)}
 
 === JOB DESCRIPTION ===
-${jobDescription}
+${jobDescription.substring(0, 2000)}
 
 Perform a thorough analysis and return ONLY a valid JSON object (no markdown, no explanation) with exactly this structure:
 {
@@ -132,19 +138,17 @@ Rules:
 - Keywords should be specific (e.g., "React.js", "Docker", "REST APIs") not generic
 - Feedback must be personalized to THIS specific resume and JD
 - improvementTips must be concrete and actionable
-- Return ONLY the JSON, no other text
-`;
+- Return ONLY the JSON, no other text`;
 
     let analysisResult;
     try {
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text();
-      analysisResult = parseGeminiJSON(responseText);
+      const responseText = await callGroq(prompt);
+      analysisResult = parseAIJSON(responseText);
     } catch (aiError) {
-      console.error('Gemini API error:', aiError);
+      console.error('Groq API error:', aiError);
       return res.status(500).json({
         success: false,
-        message: 'AI analysis failed. Please check your API key or try again.',
+        message: 'AI analysis failed. Please try again.',
         error: aiError.message,
       });
     }
@@ -159,7 +163,7 @@ Rules:
       missingKeywords: analysisResult.missingKeywords || [],
       feedback: analysisResult.feedback,
       improvementTips: analysisResult.improvementTips || [],
-      resumeText: resumeText.substring(0, 5000), // Store first 5000 chars
+      resumeText: resumeText.substring(0, 5000),
       jobDescription: jobDescription.substring(0, 3000),
     });
 
