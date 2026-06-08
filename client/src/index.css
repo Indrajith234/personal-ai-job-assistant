@@ -808,9 +808,14 @@ h1, h2, h3, h4 {
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   align-items: start;
+  min-width: 0;
 }
 
-@media (max-width: 900px) {
+.analyze-layout > * {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
   .analyze-layout {
     grid-template-columns: 1fr;
   }
@@ -1810,7 +1815,7 @@ h1, h2, h3, h4 {
   .hero-stats { gap: 24px; }
   .auth-card { padding: 32px 24px; }
   .cta-card { padding: 40px 24px; }
-  .analyze-layout { grid-template-columns: 1fr; }
+  .analyze-layout { grid-template-columns: 1fr; } /* already handled at 1024px */
   .bonus-tabs { gap: 6px; }
   .bonus-tab { padding: 7px 14px; font-size: 0.8rem; }
 
