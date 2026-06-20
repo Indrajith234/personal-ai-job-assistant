@@ -823,7 +823,7 @@ h1, h2, h3, h4 {
 
 /* Upload Zone */
 .upload-zone {
-  border: 2px solid var(--border);
+  border: none;
   border-radius: var(--radius-lg);
   padding: 48px 24px;
   text-align: center;
@@ -835,9 +835,9 @@ h1, h2, h3, h4 {
 
 .upload-zone:hover,
 .upload-zone.drag-over {
-  border-color: var(--purple);
   background: rgba(139, 92, 246, 0.05);
 }
+
 
 .upload-zone.has-file {
   border-style: solid;
